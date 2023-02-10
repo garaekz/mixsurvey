@@ -5,10 +5,14 @@ import NavbarComponent from "~/components/navbar.component";
 import SideNavComponent from "~/components/sidenav.component";
 
 import { getNoteListItems } from "~/models/note.server";
+import { authenticator } from "~/services/auth.server";
 
 export async function loader({ request }: LoaderArgs) {
-  const userId = '1'
-  const noteListItems = await getNoteListItems({ userId });
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  const noteListItems = await getNoteListItems({ userId: user.id });
   return json({ noteListItems });
 }
 

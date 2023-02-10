@@ -67,5 +67,41 @@ export function useUser(): User {
 }
 
 export function validateEmail(email: unknown): email is string {
-  return typeof email === "string" && email.length > 3 && email.includes("@");
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  if (typeof email !== "string") {
+    throw new Error("Email must be a string");
+  }
+
+  if (email.length === 0) {
+    throw new Error("Email must not be empty");
+  }
+
+  if (!email.includes("@")) {
+    throw new Error("Email must be a valid email address");
+  }
+
+  return true;
+}
+
+export function validatePassword(password: unknown): password is string {
+  if (!password) {
+    throw new Error("Password is required");
+  }
+
+  if (typeof password !== "string") {
+    throw new Error("Password must be a string");
+  }
+
+  if (password.length === 0) {
+    throw new Error("Password must not be empty");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  return true;
 }
