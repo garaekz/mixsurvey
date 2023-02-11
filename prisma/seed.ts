@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { slugify } from "~/utils";
 
 const prisma = new PrismaClient();
 
 async function seed() {
-  const email = "rachel@remix.run";
+  const email = "test@remix.run";
+  const name = "Test User";
 
   // cleanup the existing database
   await prisma.user.delete({ where: { email } }).catch(() => {
@@ -15,6 +17,7 @@ async function seed() {
 
   const user = await prisma.user.create({
     data: {
+      name,
       email,
       password: {
         create: {
@@ -23,6 +26,18 @@ async function seed() {
       },
     },
   });
+
+  const questionTypes = [
+    "Slider",
+    "Opción múltiple",
+    "Texto",
+    "Texto largo",
+  ];
+
+  await prisma.questionType.createMany({
+    data: questionTypes.map((name) => ({ name, slug: slugify(name) })),
+  });
+
 
   await prisma.note.create({
     data: {

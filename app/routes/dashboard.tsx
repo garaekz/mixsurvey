@@ -1,6 +1,7 @@
+import type { User } from "@prisma/client";
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Outlet } from "@remix-run/react";
+import { Outlet, useLoaderData } from "@remix-run/react";
 import NavbarComponent from "~/components/navbar.component";
 import SideNavComponent from "~/components/sidenav.component";
 
@@ -12,17 +13,19 @@ export async function loader({ request }: LoaderArgs) {
     failureRedirect: "/login",
   });
 
-  const noteListItems = await getNoteListItems({ userId: user.id });
-  return json({ noteListItems });
+  return json({ user });
 }
 
 export default function DashboardLayout() {
+  const loaderData = useLoaderData<typeof loader>();
+  const { user } = loaderData;
+
   return (
     <>
-    <NavbarComponent />
+    <NavbarComponent user={user} />
     <SideNavComponent />
     <div className="p-4 sm:ml-64">
-      <div className="mt-14 p-4 dark:border-gray-700">
+      <div className="mt-16 dark:border-gray-700">
         <Outlet />
       </div>
     </div>

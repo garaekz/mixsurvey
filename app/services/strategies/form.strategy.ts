@@ -14,6 +14,6 @@ export const formStrategy = new FormStrategy(async ({ form, context }) => {
   if (!user) {
     throw new Error("Invalid credentials, check your email and password");
   }
-  console.log("user", user);
+
   return user;
 })

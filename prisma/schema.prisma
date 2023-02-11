@@ -9,13 +9,18 @@ generator client {
 
 model User {
   id    String @id @default(cuid())
+  name  String
   email String @unique
+  avatarUrl String?
+  googleId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   password Password?
   notes    Note[]
+  Survey   Survey[]
+  Response Response[]
 }
 
 model Password {
@@ -35,4 +40,90 @@ model Note {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
+}
+
+model Category {
+  id     String   @id @default(cuid())
+  name   String
+  slug   String   @unique
+  Survey Survey[]
+}
+
+model Survey {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  categoryId String
+
+  questions Question[]
+  Response  Response[]
+}
+
+model QuestionType {
+  id     String   @id @default(cuid())
+  name   String
+  slug   String   @unique
+  questions Question[]
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  surveyId String
+
+  questionType   QuestionType @relation(fields: [questionTypeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionTypeId String
+
+  options Option[]
+}
+
+model Option {
+  id        String   @id @default(cuid())
+  text      String
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionId String
+  Answer     Answer[]
+}
+
+model Response {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  surveyId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  answers Answer[]
+}
+
+model Answer {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseId String
+
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  optionId String
 }

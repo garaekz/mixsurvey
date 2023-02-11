@@ -86,6 +86,17 @@ export function validateEmail(email: unknown): email is string {
   return true;
 }
 
+export const slugify = (text: string) =>
+  text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+
 export function validatePassword(password: unknown): password is string {
   if (!password) {
     throw new Error("Password is required");

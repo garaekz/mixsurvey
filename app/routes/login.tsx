@@ -138,7 +138,8 @@ export default function LoginPage() {
             Iniciar sesión
           </button>
         </Form>
-        <button className="flex w-full items-center justify-center gap-x-3 rounded-lg border py-2.5 text-sm font-medium duration-150 hover:bg-gray-50 active:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800 dark:active:bg-gray-700">
+        <Form method="post" action={`/auth/google`}>
+        <button type="submit" className="flex w-full items-center justify-center gap-x-3 rounded-lg border py-2.5 text-sm font-medium duration-150 hover:bg-gray-50 active:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800 dark:active:bg-gray-700">
           <svg
             className="h-5 w-5"
             viewBox="0 0 48 48"
@@ -171,6 +172,7 @@ export default function LoginPage() {
           </svg>
           Ingresa con tu cuenta de Google
         </button>
+        </Form>
       </div>
     </div>
   );
