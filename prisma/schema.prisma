@@ -8,19 +8,20 @@ generator client {
 }
 
 model User {
-  id    String @id @default(cuid())
-  name  String
-  email String @unique
+  id        String  @id @default(cuid())
+  name      String
+  email     String  @unique
   avatarUrl String?
-  googleId String? @unique
+  googleId  String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   password Password?
   notes    Note[]
-  Survey   Survey[]
-  Response Response[]
+  surveys   Survey[]
+  responses Response[]
+  categories Category[]
 }
 
 model Password {
@@ -44,9 +45,13 @@ model Note {
 
 model Category {
   id     String   @id @default(cuid())
-  name   String
+  name   String   @unique
   slug   String   @unique
-  Survey Survey[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+  surveys Survey[]
 }
 
 model Survey {
@@ -64,13 +69,13 @@ model Survey {
   categoryId String
 
   questions Question[]
-  Response  Response[]
+  responses  Response[]
 }
 
 model QuestionType {
-  id     String   @id @default(cuid())
-  name   String
-  slug   String   @unique
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
   questions Question[]
 }
 
@@ -98,7 +103,7 @@ model Option {
 
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   questionId String
-  Answer     Answer[]
+  answers     Answer[]
 }
 
 model Response {

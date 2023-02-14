@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
 import { TbLayoutDashboard } from "react-icons/tb";
 import { RiSurveyLine } from "react-icons/ri";
+import { TfiLayoutListThumb } from "react-icons/tfi";
 
 export default function SideNavComponent() {
   const routes = [
@@ -10,10 +11,15 @@ export default function SideNavComponent() {
       icon: <TbLayoutDashboard className="h-6 w-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />,
     },
     {
-      name: "Surveys",
+      name: "Encuestas",
       href: "/dashboard/surveys",
       icon: <RiSurveyLine className="h-6 w-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />,
     },
+    {
+      name: "Categorías",
+      href: "/dashboard/categories",
+      icon: <TfiLayoutListThumb className="h-6 w-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />,
+    }
   ];
   return (
     <aside
