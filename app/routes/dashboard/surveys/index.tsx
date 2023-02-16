@@ -1,25 +1,27 @@
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useEffect, useState } from "react";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { useEffect } from "react";
+import { Link, useActionData, useLoaderData } from "@remix-run/react";
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { getAllQuestionTypes } from "~/models/question-type.server";
-import CreateQuestionComponent from "~/components/create-question.component";
 import { authenticator } from "~/services/auth.server";
 import { createSurvey, getPagedSurveys } from "~/models/survey.server";
 import qs from "qs";
-import { getAllCategories } from "~/models/category.server";
 import ToastComponent from "~/components/toast.component";
 import { toast, Toaster } from "react-hot-toast";
+import { commitSession, getSession } from "~/services/session.server";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
+  const session = await getSession(request.headers.get("Cookie"));
+  const success = session.get("success") || null;
   const questionTypes = await getAllQuestionTypes();
-  const categories = await getAllCategories();
   const surveys = await getPagedSurveys(1, 10);
-  return json({ categories, questionTypes, surveys, user });
+  return json(
+    { questionTypes, surveys, user, success },
+    { headers: { "Set-Cookie": await commitSession(session) } }
+  );
 };
 
 export const action = async ({ request, params }: LoaderArgs) => {
@@ -32,7 +34,7 @@ export const action = async ({ request, params }: LoaderArgs) => {
     data.userId = user.id;
     const parsedData = JSON.parse(JSON.stringify(data));
     await createSurvey(parsedData);
-    return json({ success: true}, { status: 201 });
+    return json({ success: true }, { status: 201 });
   } catch (error: any) {
     if (
       error.code &&
@@ -48,187 +50,35 @@ export const action = async ({ request, params }: LoaderArgs) => {
         { status: 400 }
       );
     }
-    return json({ errors: {
-      unknown: "Ocurrío un error inesperado",
-    } }, { status: 400 });
+
+    return json(
+      {
+        errors: {
+          unknown: "Ocurrío un error inesperado",
+        },
+      },
+      { status: 400 }
+    );
   }
 };
 
-const freshQuestion = {
-  text: "",
-  type: "",
-};
-
 export default function SurveysIndexPage() {
-  const [isCreating, setIsCreating] = useState(false);
-  const [questions, setQuestions] = useState([freshQuestion]);
-  const { categories, questionTypes, surveys } = useLoaderData<typeof loader>()
+  const { surveys, success } = useLoaderData<typeof loader>();
   const actionData = useActionData<{
-    success?: any;
     errors?: {
       name?: string;
     };
   }>();
   const errors = actionData?.errors;
-  const success = actionData?.success;
 
   useEffect(() => {
     if (success) {
-      setIsCreating(false);
-      toast.custom(<ToastComponent message="Encuesta creada exitosamente" type="success" />);
+      toast.custom(<ToastComponent message={success} type="success" />);
     }
   }, [success]);
-
-  const prepareCreateQuestion = () => {
-    setIsCreating(true);
-    setQuestions([freshQuestion]);
-  };
-
-  const addNewQuestion = () => {
-    setQuestions([...questions, freshQuestion]);
-  };
-
   return (
     <>
-      <Toaster />
-      <Transition appear show={isCreating} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-30"
-          onClose={() => setIsCreating(false)}
-        >
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-50" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="relative w-full max-w-2xl rounded-lg bg-white p-4 shadow dark:bg-gray-800 sm:p-5">
-                  <Dialog.Title className="mb-4 flex items-center justify-between rounded-t border-b pb-4 dark:border-gray-600 sm:mb-5">
-                    <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Nueva encuesta
-                    </div>
-                    <button
-                      onClick={() => setIsCreating(false)}
-                      type="button"
-                      className="ml-auto inline-flex items-center rounded-lg bg-transparent p-1.5 text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
-                      data-modal-toggle="defaultModal"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        ></path>
-                      </svg>
-                      <span className="sr-only">Close modal</span>
-                    </button>
-                  </Dialog.Title>
-                  <Form method="post">
-                    <div className="mb-4 flex flex-col justify-start gap-4 text-left">
-                      <div className="flex gap-2">
-                        <div className="w-full">
-                          <label
-                            htmlFor="title"
-                            className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-                          >
-                            Titulo
-                          </label>
-                          <input
-                            type="text"
-                            name="title"
-                            id="title"
-                            className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-600 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500"
-                            placeholder="Type product name"
-                            required={true}
-                          />
-                        </div>
-                        <div className="min-w-fit">
-                          <label
-                            htmlFor="category"
-                            className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-                          >
-                            Categoría
-                          </label>
-                          <select
-                            id="category"
-                            name="category"
-                            required={true}
-                            className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500"
-                          >
-                            {categories.map((category) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      {questions.map((_, index) => (
-                        <CreateQuestionComponent
-                          key={index}
-                          index={index}
-                          questionTypes={questionTypes}
-                        />
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addNewQuestion}
-                      className="inline-flex items-center rounded-lg bg-transparent p-2.5 text-sm text-gray-400 hover:text-blue-500 dark:hover:text-white"
-                    >
-                      <svg
-                        className="mr-1 -ml-1 h-6 w-6"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        ></path>
-                      </svg>
-                      Agregar otra pregunta
-                    </button>
-                    <div className="mt-6 flex items-center justify-end">
-                      <button
-                        type="submit"
-                        className="inline-flex items-center rounded-lg bg-primary-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  </Form>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      {success ? <Toaster /> : null}
       <section className="bg-gray-50 dark:bg-gray-900 sm:p-5">
         <div className="mx-auto max-w-screen-xl lg:px-12">
           <div className="relative overflow-hidden bg-white shadow-md dark:bg-gray-800 sm:rounded-lg">
@@ -265,9 +115,8 @@ export default function SurveysIndexPage() {
                 </form>
               </div>
               <div className="flex w-full flex-shrink-0 flex-col items-stretch justify-end space-y-2 md:w-auto md:flex-row md:items-center md:space-y-0 md:space-x-3">
-                <button
-                  onClick={prepareCreateQuestion}
-                  type="button"
+                <Link
+                  to="/dashboard/surveys/create"
                   className="flex items-center justify-center rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
                 >
                   <svg
@@ -284,7 +133,7 @@ export default function SurveysIndexPage() {
                     />
                   </svg>
                   Crear encuesta
-                </button>
+                </Link>
                 <div className="flex w-full items-center space-x-3 md:w-auto">
                   <button
                     id="actionsDropdownButton"
@@ -461,7 +310,10 @@ export default function SurveysIndexPage() {
                       Encuesta
                     </th>
                     <th scope="col" className="px-4 py-3">
-                      Proyecto
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Campos personalizados
                     </th>
                     <th scope="col" className="px-4 py-3">
                       Preguntas
@@ -475,8 +327,11 @@ export default function SurveysIndexPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  { surveys.map((survey) => (
-                    <tr key={survey.id} className="border-t border-gray-200 dark:border-gray-700">
+                  {surveys.map((survey) => (
+                    <tr
+                      key={survey.id}
+                      className="border-t border-gray-200 dark:border-gray-700"
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center text-sm">
                           <div>
@@ -490,7 +345,25 @@ export default function SurveysIndexPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {survey.category.name}
+                        {survey.isPublished ? (
+                          <span className="mr-2 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
+                            Publicada
+                          </span>
+                        ) : (
+                          <span className="mr-2 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
+                            No publicada
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {survey.customFields.map((field) => (
+                          <span
+                            key={field.id}
+                            className="mr-2 rounded-full font-bold bg-gray-100 px-2.5 py-0.5 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                          >
+                            {field.key}: <span className="text-gray-500 dark:text-gray-400">{field.value}</span>
+                          </span>
+                        ))}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {survey.questions.length}

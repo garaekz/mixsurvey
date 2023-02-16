@@ -1,4 +1,4 @@
-import type { User, Survey, Question } from "@prisma/client";
+import type { User, Survey, Question, CustomField } from "@prisma/client";
 
 import { prisma } from "~/db.server";
 import { slugify } from "~/utils";
@@ -10,7 +10,7 @@ export type { Survey } from "@prisma/client";
 export async function createSurvey({
   title,
   questions,
-  category,
+  customFields,
   userId,
 }: Pick<Survey, "title"> & {
   userId: User["id"];
@@ -19,10 +19,13 @@ export async function createSurvey({
     text: Question["text"];
     type: Question["questionTypeId"];
   }>
-} & {
-  category: Survey["categoryId"];
+  & {
+    customFields: Array<{
+      key: CustomField["key"];
+      value: CustomField["value"];
+    }>
+  }
 }) {
-
   let slug = slugify(title);
   const checkTitle = await prisma.survey.findFirst({
     where: {
@@ -38,23 +41,24 @@ export async function createSurvey({
     data: {
       title,
       slug,
-      questions: {
-        create: questions.map((question) => ({
-          text: question.text,
-          questionTypeId: question.type,
-        })),
-      },
       user: {
         connect: {
           id: userId,
         },
       },
-      category: {
-        connect: {
-          id: category,
-        },
-      },
-    },
+      questions: questions?.length > 0 ? {
+        create: questions.map((question) => ({
+          text: question.text,
+          questionTypeId: question.type,
+        })),
+      } : undefined,
+      customFields: customFields?.length > 0 ? {
+        create: customFields.map((customField: CustomField) => ({
+          key: customField.key,
+          value: customField.value,
+        })),
+      } : undefined,
+    }
   });
 }
 
@@ -68,13 +72,9 @@ export async function getPagedSurveys(
       title: true,
       description: true,
       slug: true,
+      isPublished: true,
       createdAt: true,
       updatedAt: true,
-      category: {
-        select: {
-          name: true,
-        },
-      },
       questions: {
         select: {
           text: true,
@@ -89,6 +89,13 @@ export async function getPagedSurveys(
               name: true,
             },
           },
+        },
+      },
+      customFields: {
+        select: {
+          id: true,
+          key: true,
+          value: true,
         },
       },
     },

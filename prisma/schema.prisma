@@ -18,10 +18,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   password Password?
-  notes    Note[]
   surveys   Survey[]
   responses Response[]
-  categories Category[]
+  respondents Respondent[]
 }
 
 model Password {
@@ -31,42 +30,29 @@ model Password {
   userId String @unique
 }
 
-model Note {
-  id    String @id @default(cuid())
-  title String
-  body  String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
-}
-
-model Category {
+model CustomField {
   id     String   @id @default(cuid())
-  name   String   @unique
-  slug   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
-  surveys Survey[]
+  key   String   @unique
+  value   String   @unique
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  surveyId String
 }
 
 model Survey {
   id          String   @id @default(cuid())
   title       String
+  subtitle    String?
   slug        String   @unique
   description String?
+  instructions String?
+  isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
 
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  categoryId String
+  customFields CustomField[]
 
   questions Question[]
   responses  Response[]
@@ -118,11 +104,12 @@ model Response {
   userId String
 
   answers Answer[]
+  respondents Respondent[]
 }
 
 model Answer {
   id        String   @id @default(cuid())
-  text      String
+  value      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -131,4 +118,18 @@ model Answer {
 
   option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   optionId String
+}
+
+model Respondent {
+  id        String   @id @default(cuid())
+  email     String  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
 }

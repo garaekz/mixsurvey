@@ -29,30 +29,13 @@ async function seed() {
 
   const questionTypes = [
     "Slider",
-    "Opción múltiple",
-    "Texto",
-    "Texto largo",
+    // "Opción múltiple",
+    // "Texto",
+    // "Texto largo",
   ];
 
   await prisma.questionType.createMany({
     data: questionTypes.map((name) => ({ name, slug: slugify(name) })),
-  });
-
-
-  await prisma.note.create({
-    data: {
-      title: "My first note",
-      body: "Hello, world!",
-      userId: user.id,
-    },
-  });
-
-  await prisma.note.create({
-    data: {
-      title: "My second note",
-      body: "Hello, world!",
-      userId: user.id,
-    },
   });
 
   console.log(`Database has been seeded. 🌱`);
