@@ -18,58 +18,15 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   const success = session.get("success") || null;
   const questionTypes = await getAllQuestionTypes();
   const surveys = await getPagedSurveys(1, 10);
+  console.log(surveys);
   return json(
     { questionTypes, surveys, user, success },
     { headers: { "Set-Cookie": await commitSession(session) } }
   );
 };
 
-export const action = async ({ request, params }: LoaderArgs) => {
-  const user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login",
-  });
-  try {
-    const text = await request.text();
-    const data = qs.parse(text);
-    data.userId = user.id;
-    const parsedData = JSON.parse(JSON.stringify(data));
-    await createSurvey(parsedData);
-    return json({ success: true }, { status: 201 });
-  } catch (error: any) {
-    if (
-      error.code &&
-      error.code === "P2002" &&
-      error.meta?.target === "Survey_name_key"
-    ) {
-      return json(
-        {
-          errors: {
-            name: "Ya existe una encuesta con ese nombre",
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    return json(
-      {
-        errors: {
-          unknown: "Ocurrío un error inesperado",
-        },
-      },
-      { status: 400 }
-    );
-  }
-};
-
 export default function SurveysIndexPage() {
   const { surveys, success } = useLoaderData<typeof loader>();
-  const actionData = useActionData<{
-    errors?: {
-      name?: string;
-    };
-  }>();
-  const errors = actionData?.errors;
 
   useEffect(() => {
     if (success) {
@@ -327,7 +284,7 @@ export default function SurveysIndexPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {surveys.map((survey) => (
+                  {surveys.data.map((survey) => (
                     <tr
                       key={survey.id}
                       className="border-t border-gray-200 dark:border-gray-700"
@@ -380,14 +337,14 @@ export default function SurveysIndexPage() {
               className="flex flex-col items-start justify-between space-y-3 p-4 md:flex-row md:items-center md:space-y-0"
               aria-label="Table navigation"
             >
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              <span className="flex text-sm font-normal text-gray-500 dark:text-gray-400 gap-1">
                 Showing
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  1-10
+                  {surveys.pagination.from}-{surveys.pagination.to}
                 </span>
                 of
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  1000
+                  {surveys.pagination.total}
                 </span>
               </span>
               <ul className="inline-flex items-stretch -space-x-px">
